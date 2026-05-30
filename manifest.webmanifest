@@ -1,0 +1,16 @@
+{
+  "name": "Beer Counter",
+  "short_name": "Beers",
+  "description": "Tally the brews and crown the legend — an offline beer counter for the fellas.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1108",
+  "theme_color": "#1c1108",
+  "categories": ["lifestyle", "entertainment", "utilities"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

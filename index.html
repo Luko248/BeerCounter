@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1c1108" />
+  <meta name="description" content="Tally the brews and crown the legend — offline beer counter." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Beer Counter" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <title>Beer Counter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============ SETUP SCREEN ============ -->
+  <section id="setup" class="screen is-active">
+    <header class="setup-head">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mug"></use></svg>
+        <h1>Beer Counter</h1>
+        <p class="tagline">Tally the brews. Crown the legend.</p>
+      </div>
+    </header>
+
+    <div class="setup-body">
+      <button id="resumeBanner" class="resume-banner hidden" type="button">
+        <span class="resume-pulse"></span>
+        <span class="resume-text">
+          <strong>Round in progress</strong>
+          <em id="resumeMeta">tap to resume</em>
+        </span>
+        <svg class="resume-arrow" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"></use></svg>
+      </button>
+
+      <div class="field-row">
+        <label class="field-label" for="nameInput">The fellas</label>
+        <span id="selCount" class="sel-count"></span>
+      </div>
+
+      <form id="addForm" class="add-row" autocomplete="off">
+        <input id="nameInput" class="text-input" type="text" placeholder="Add a name…" maxlength="20" />
+        <button id="addBtn" class="btn-add" type="submit" aria-label="Add participant">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"></use></svg>
+        </button>
+      </form>
+
+      <ul id="rosterList" class="roster-list" aria-live="polite"></ul>
+      <p id="emptyHint" class="empty-hint">No fellas yet — add a few to get the round going.</p>
+    </div>
+
+    <div class="setup-foot">
+      <button id="startBtn" class="btn-primary" type="button" disabled>
+        <span id="startLabel">Start the round</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"></use></svg>
+      </button>
+      <button id="hofBtn" class="btn-ghost" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
+        <span>Hall of Fame</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ DASHBOARD SCREEN ============ -->
+  <section id="dashboard" class="screen">
+    <header class="dash-head">
+      <button id="backBtn" class="icon-btn" type="button" aria-label="Back to setup">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"></use></svg>
+      </button>
+      <div class="dash-title">
+        <svg class="dash-title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mug"></use></svg>
+        <div>
+          <h2>The Round</h2>
+          <span id="totalLabel" class="total-label">0 beers</span>
+        </div>
+      </div>
+      <button id="dashHofBtn" class="icon-btn" type="button" aria-label="Hall of Fame">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
+      </button>
+    </header>
+
+    <div id="tiles" class="tiles"></div>
+
+    <div class="dash-foot">
+      <button id="resetBtn" class="btn-ghost danger" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-reset"></use></svg>
+        <span>Reset</span>
+      </button>
+      <button id="finishBtn" class="btn-primary" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-flag"></use></svg>
+        <span>Finish &amp; save</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ HALL OF FAME SCREEN ============ -->
+  <section id="history" class="screen">
+    <header class="dash-head">
+      <button id="histBackBtn" class="icon-btn" type="button" aria-label="Back">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"></use></svg>
+      </button>
+      <div class="dash-title">
+        <svg class="dash-title-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
+        <div><h2>Hall of Fame</h2><span class="total-label">All-time records</span></div>
+      </div>
+      <span class="icon-spacer" aria-hidden="true"></span>
+    </header>
+
+    <div class="history-body">
+      <div id="champCard" class="champ-card"></div>
+
+      <h3 class="sec-title">Leaderboard <span>· best single round</span></h3>
+      <ul id="leaderList" class="leader-list"></ul>
+
+      <h3 class="sec-title">Sessions</h3>
+      <ul id="sessionList" class="session-list"></ul>
+    </div>
+  </section>
+
+  <!-- ============ ICON SPRITE ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-mug" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M6 3a1 1 0 0 0-1 1v15a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-3h1.5A3.5 3.5 0 0 0 21 11.5v-3A3.5 3.5 0 0 0 17.5 5H17V4a1 1 0 0 0-1-1H6Zm11 4h.5A1.5 1.5 0 0 1 19 8.5v3A1.5 1.5 0 0 1 17.5 14H17V7Z"/>
+        <path fill="currentColor" opacity=".55" d="M7 5h8v4H7z"/>
+      </symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path fill="currentColor" d="M5 11h14v2H5z"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 5.2 19 11l-5.8 5.8-1.4-1.4 3.4-3.4H5v-2h10.2l-3.4-3.4 1.4-1.4Z"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path fill="currentColor" d="M10.8 18.8 5 13l5.8-5.8 1.4 1.4L8.8 12H19v2H8.8l3.4 3.4-1.4 1.4Z"/></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></symbol>
+      <symbol id="i-crown" viewBox="0 0 24 24"><path fill="currentColor" d="M3 7l4 4 5-6 5 6 4-4-2 12H5L3 7Zm2 13h14v2H5z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 7.4 18.7 6 9.5 16.2Z"/></symbol>
+      <symbol id="i-trophy" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4h10v1h3a1 1 0 0 1 1 1v2a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h2a1 1 0 0 1 1 1v2H8v-2a1 1 0 0 1 1-1h2v-2.1A5 5 0 0 1 7.3 12H7a4 4 0 0 1-4-4V6a1 1 0 0 1 1-1h3V4Zm0 3H5v1a2 2 0 0 0 2 2V7Zm10 0v3a2 2 0 0 0 2-2V7h-2Z"/></symbol>
+      <symbol id="i-flag" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3v18H4V3h2Zm2 1h11l-2 4 2 4H8V4Z"/></symbol>
+    </defs>
+  </svg>
+
+  <script src="app.js"></script>
+</body>
+</html>
