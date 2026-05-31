@@ -399,10 +399,11 @@
       champCard.innerHTML = `
         <svg class="champ-crown" viewBox="0 0 24 24"><use href="#i-crown"></use></svg>
         <span class="champ-label">All-time champion</span>
-        <span class="champ-name"></span>
+        <span class="champ-nameline"><span class="dot"></span><span class="champ-name"></span></span>
         <span class="champ-stat"><strong>${c.count}</strong> ${c.count === 1 ? 'beer' : 'beers'} in one round</span>
         <span class="champ-when">${c.live ? 'happening now' : fmtDate(c.when)}</span>`;
       champCard.querySelector('.champ-name').textContent = c.name;
+      paintFella(champCard, c.name);
     } else {
       champCard.classList.add('empty');
       champCard.innerHTML = `
@@ -421,10 +422,12 @@
         li.className = 'leader-item' + (i < 3 ? ` medal m${i + 1}` : '');
         li.innerHTML = `
           <span class="rank">${i + 1}</span>
+          <span class="dot"></span>
           <span class="leader-name"></span>
           <span class="leader-when">${b.live ? 'now' : fmtDate(b.when)}</span>
           <span class="leader-count">${b.count}<svg viewBox="0 0 24 24"><use href="#i-mug"></use></svg></span>`;
         li.querySelector('.leader-name').textContent = b.name;
+        paintFella(li, b.name);
         leaderList.appendChild(li);
       });
     }
