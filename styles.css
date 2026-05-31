@@ -32,26 +32,28 @@ html {
 body {
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--cream);
-  background:
-    radial-gradient(120% 90% at 50% -10%, #3a2410 0%, var(--bg-2) 45%, var(--bg) 100%);
-  background-attachment: fixed;
+  /* transparent: the beer canvas is the background. A previous opaque gradient
+     here (with background-attachment:fixed, buggy on iOS) was covering it. */
+  background: transparent;
   min-height: 100dvh;
   overflow-x: hidden;
 }
 
 /* ---------- living beer background ---------- */
+/* Sits at z-index 0 (not a fragile negative index behind the body) with all
+   screens explicitly above it, so iOS can't paint content over it. */
 .beer-bg {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: -1;
+  z-index: 0;
   display: block;
   pointer-events: none;
 }
 
 /* ---------- screen plumbing ---------- */
-.screen { display: none; min-height: 100dvh; }
+.screen { display: none; min-height: 100dvh; position: relative; z-index: 1; }
 .screen.is-active { display: flex; flex-direction: column; }
 
 /* ============ SETUP ============ */
