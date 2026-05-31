@@ -183,15 +183,16 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
+  background: linear-gradient(160deg, var(--fella-2, var(--panel-2)), var(--fella-1, var(--panel)));
+  border: 1px solid var(--fella-border, var(--line));
   border-radius: 14px;
   padding: 10px 12px;
   animation: pop .18s ease;
-  transition: border-color .15s, opacity .15s;
-  opacity: .6;
+  transition: opacity .15s, box-shadow .15s, filter .15s;
+  opacity: .5;
+  filter: saturate(.7);
 }
-.roster-item.on { opacity: 1; border-color: rgba(246,166,35,.4); }
+.roster-item.on { opacity: 1; filter: none; box-shadow: 0 6px 16px rgba(0,0,0,.32); }
 .roster-item .check {
   flex: 0 0 34px; height: 34px;
   border-radius: 10px;
@@ -331,8 +332,8 @@ body {
 
 .tile {
   position: relative;
-  background: linear-gradient(165deg, var(--panel-2), var(--panel));
-  border: 1px solid var(--line);
+  background: linear-gradient(165deg, var(--fella-2, var(--panel-2)), var(--fella-1, var(--panel)));
+  border: 1px solid var(--fella-border, var(--line));
   border-radius: var(--r);
   padding: 16px 14px 14px;
   cursor: pointer;
@@ -372,7 +373,7 @@ body {
   font-weight: 800;
   font-size: 3rem;
   line-height: 1;
-  color: var(--gold);
+  color: var(--fella-accent, var(--gold));
   text-shadow: 0 3px 0 rgba(0,0,0,.25);
 }
 .count-mugs { display: flex; align-items: center; gap: 4px; color: var(--amber); }

@@ -17,6 +17,24 @@
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
+  // ---------- per-fella colour ----------
+  // Deterministic from the name, so a fella keeps the same colour across the
+  // roster, their tile and the leaderboard. Backgrounds are kept deep and a bit
+  // desaturated (low lightness) so the light cream text always stays readable.
+  function hueFor(name) {
+    let h = 0;
+    const s = (name || '?').toLowerCase();
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h % 360;
+  }
+  function paintFella(el, name) {
+    const hue = hueFor(name);
+    el.style.setProperty('--fella-1', `hsl(${hue} 36% 23%)`);   // base
+    el.style.setProperty('--fella-2', `hsl(${hue} 40% 31%)`);   // gradient top
+    el.style.setProperty('--fella-border', `hsl(${hue} 46% 44%)`);
+    el.style.setProperty('--fella-accent', `hsl(${hue} 80% 74%)`); // light tint for numbers
+  }
+
   // ---------- elements ----------
   const $ = (id) => document.getElementById(id);
   const screens = { setup: $('setup'), dashboard: $('dashboard'), history: $('history') };
@@ -150,6 +168,7 @@
           <svg viewBox="0 0 24 24"><use href="#i-trash"></use></svg>
         </button>`;
       li.querySelector('.nm').textContent = f.name;
+      paintFella(li, f.name);
       li.querySelector('.check').addEventListener('click', () => toggleSelected(f.id));
       li.querySelector('.del').addEventListener('click', () => removeFromRoster(f.id, f.name));
       rosterList.appendChild(li);
@@ -260,6 +279,7 @@
         <button class="step-btn plus" type="button" aria-label="Add one beer"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
       </div>`;
     tile.querySelector('.tile-name').textContent = m.name;
+    paintFella(tile, m.name);
 
     tile.addEventListener('click', (e) => {
       if (e.target.closest('.step-btn')) return;
