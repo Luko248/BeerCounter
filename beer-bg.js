@@ -132,7 +132,16 @@
     ctx.fillStyle = warm;
     ctx.fillRect(0, 0, W, H);
 
-    // --- bubbles rising along the (tilted) up-direction ---
+    // --- liquid surface: level with gravity, so it tilts on screen as you move ---
+    const surf = {
+      base: H * 0.19 + tilt.y * H * 0.05 + Math.sin(t * 0.6) * H * 0.006,
+      slope: tilt.x * 0.42,
+      amp: 4,
+      freq: 0.012,
+      phase: t * 1.1,
+    };
+
+    // --- bubbles rising up to (and popping at) the foam surface ---
     if (!reduceMotion) {
       ctx.save();
       for (const bub of bubbles) {
@@ -141,7 +150,7 @@
         bub.y -= bub.speed * dt;
         bub.x += (tilt.x * 26 * bub.drift + Math.sin(bub.wob) * 8) * dt;
 
-        if (bub.y < -bub.r - 4 || bub.x < -20 || bub.x > W + 20) {
+        if (bub.y < surfaceY(bub.x, surf) - bub.r * 0.5 || bub.x < -20 || bub.x > W + 20) {
           Object.assign(bub, newBubble(false));
           continue;
         }
@@ -150,18 +159,79 @@
       ctx.restore();
     }
 
+    drawFoam(surf, t);
+
     // --- soft top fade + vignette for depth and text legibility ---
-    const topFade = ctx.createLinearGradient(0, 0, 0, H * 0.3);
+    const topFade = ctx.createLinearGradient(0, 0, 0, H * 0.15);
     topFade.addColorStop(0, 'rgba(8, 5, 2, 0.55)');
     topFade.addColorStop(1, 'rgba(8, 5, 2, 0)');
     ctx.fillStyle = topFade;
-    ctx.fillRect(0, 0, W, H * 0.3);
+    ctx.fillRect(0, 0, W, H * 0.15);
 
     const vig = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
     vig.addColorStop(0, 'rgba(0,0,0,0)');
     vig.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, W, H);
+  }
+
+  // y of the liquid surface at a given x. The surface stays level with gravity,
+  // so its slope on screen is driven by the left-right tilt; gentle waves animate it.
+  function surfaceY(x, s) {
+    return s.base + (x - W / 2) * s.slope
+      + Math.sin(x * s.freq + s.phase) * s.amp
+      + Math.sin(x * s.freq * 0.5 - s.phase * 1.3) * s.amp * 0.5;
+  }
+
+  function drawFoam(s, t) {
+    const step = 14;
+
+    // headspace: the "air" above the surface reads a touch darker than the beer
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(W, 0);
+    ctx.lineTo(W, surfaceY(W, s));
+    for (let x = W; x >= 0; x -= step) ctx.lineTo(x, surfaceY(x, s));
+    ctx.closePath();
+    const hs = ctx.createLinearGradient(0, 0, 0, s.base + 12);
+    hs.addColorStop(0, 'rgba(8,5,2,0)');
+    hs.addColorStop(1, 'rgba(8,5,2,0.30)');
+    ctx.fillStyle = hs;
+    ctx.fill();
+
+    // soft foam band hugging the underside of the surface
+    ctx.beginPath();
+    ctx.moveTo(0, surfaceY(0, s));
+    for (let x = step; x <= W; x += step) ctx.lineTo(x, surfaceY(x, s));
+    for (let x = W; x >= 0; x -= step) ctx.lineTo(x, surfaceY(x, s) + 16);
+    ctx.closePath();
+    const fb = ctx.createLinearGradient(0, s.base - 4, 0, s.base + 16);
+    fb.addColorStop(0, 'rgba(255,247,226,0.30)');
+    fb.addColorStop(1, 'rgba(255,236,198,0)');
+    ctx.fillStyle = fb;
+    ctx.fill();
+
+    // crisp foam top edge
+    ctx.beginPath();
+    ctx.moveTo(0, surfaceY(0, s));
+    for (let x = step; x <= W; x += step) ctx.lineTo(x, surfaceY(x, s));
+    ctx.strokeStyle = 'rgba(255,250,232,0.5)';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    if (reduceMotion) return;
+
+    // fizzing foam bubbles riding the surface
+    ctx.fillStyle = 'rgba(255,248,228,1)';
+    for (let i = 0; i < W; i += 20) {
+      const fx = i + Math.sin(t * 1.3 + i) * 4;
+      const fy = surfaceY(fx, s) + Math.sin(t * 2 + i * 0.7) * 1.6 + 1;
+      ctx.globalAlpha = 0.16 + 0.2 * Math.abs(Math.sin(i * 0.37 + t * 0.5));
+      ctx.beginPath();
+      ctx.arc(fx, fy, 1 + Math.abs(Math.sin(i * 1.1)) * 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   function drawBubble(b) {

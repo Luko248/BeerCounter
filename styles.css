@@ -23,6 +23,12 @@ html, body {
   height: 100%;
 }
 
+/* Dark base behind everything — kills the white iOS status-bar / overscroll area
+   under the translucent status bar (theme-color alone is ignored in iOS standalone). */
+html {
+  background: #1c1108;
+}
+
 body {
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--cream);
