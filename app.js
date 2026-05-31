@@ -31,6 +31,8 @@
   const startBtn     = $('startBtn');
   const startLabel   = $('startLabel');
   const hofBtn       = $('hofBtn');
+  const lastCrewBtn  = $('lastCrewBtn');
+  const lastCrewLabel= $('lastCrewLabel');
 
   const backBtn      = $('backBtn');
   const dashHofBtn   = $('dashHofBtn');
@@ -104,6 +106,20 @@
     return best;
   }
 
+  // most recently finished round
+  function lastSession() {
+    if (!db.history.length) return null;
+    return db.history.reduce((a, b) => ((b.endedAt || 0) > (a.endedAt || 0) ? b : a));
+  }
+  function lastCrewNames() {
+    const s = lastSession();
+    return new Set(s ? s.entries.map(e => e.name) : []);
+  }
+  function lastCrewIds() {
+    const names = lastCrewNames();
+    return db.roster.filter(f => names.has(f.name)).map(f => f.id);
+  }
+
   function renderSetup() {
     // active session banner
     if (db.session) {
@@ -117,6 +133,7 @@
     }
 
     const pb = personalBestMap();
+    const lastNames = lastCrewNames();
     rosterList.innerHTML = '';
     db.roster.forEach(f => {
       const on = selected.has(f.id);
@@ -127,15 +144,27 @@
           <svg viewBox="0 0 24 24"><use href="#i-check"></use></svg>
         </button>
         <span class="nm"></span>
+        ${lastNames.has(f.name) ? '<span class="last-chip">last</span>' : ''}
         ${pb.has(f.name) ? `<span class="pb-chip"><svg viewBox="0 0 24 24"><use href="#i-trophy"></use></svg>${pb.get(f.name)}</span>` : ''}
         <button class="del" type="button" aria-label="Remove from roster">
           <svg viewBox="0 0 24 24"><use href="#i-trash"></use></svg>
         </button>`;
       li.querySelector('.nm').textContent = f.name;
       li.querySelector('.check').addEventListener('click', () => toggleSelected(f.id));
-      li.querySelector('.del').addEventListener('click', () => removeFromRoster(f.id));
+      li.querySelector('.del').addEventListener('click', () => removeFromRoster(f.id, f.name));
       rosterList.appendChild(li);
     });
+
+    // "bring back last round's crew" quick-pick
+    const crew = lastCrewIds();
+    const allPicked = crew.length > 0 && crew.every(id => selected.has(id));
+    lastCrewBtn.classList.toggle('hidden', crew.length === 0);
+    lastCrewBtn.classList.toggle('done', allPicked);
+    if (crew.length) {
+      lastCrewLabel.textContent = allPicked
+        ? `Last round's crew added · ${crew.length}`
+        : `Bring back last round's crew · ${crew.length}`;
+    }
 
     emptyHint.classList.toggle('hidden', db.roster.length > 0);
     const n = selected.size;
@@ -158,7 +187,8 @@
     renderSetup();
   }
 
-  function removeFromRoster(id) {
+  function removeFromRoster(id, name) {
+    if (!confirm(`Remove ${name} from the roster?`)) return;
     db.roster = db.roster.filter(f => f.id !== id);
     selected.delete(id);
     save();
@@ -192,6 +222,11 @@
     save();
     renderDashboard();
     show('dashboard');
+  });
+
+  lastCrewBtn.addEventListener('click', () => {
+    lastCrewIds().forEach(id => selected.add(id));
+    renderSetup();
   });
 
   hofBtn.addEventListener('click', () => { renderHistory(); show('history'); });
@@ -313,8 +348,8 @@
       : 'No beers counted yet — close this round without saving?';
     if (!confirm(msg)) return;
     archiveSession();
-    // reset selection to everyone still in the roster for convenience
-    selected = new Set(db.roster.map(f => f.id));
+    // start the next round from a clean slate — pick who's actually here
+    selected = new Set();
     buzz(20);
     renderSetup();
     show('setup');
@@ -428,7 +463,9 @@
 
   // ================= BOOT =================
   load();
-  selected = new Set(db.roster.map(f => f.id)); // default: everyone in
+  // Nobody is preselected by default: freshly added names auto-tick, and
+  // returning fellas are chosen deliberately (or via "last round's crew").
+  selected = new Set();
   renderSetup();
   if (db.session) { renderDashboard(); show('dashboard'); }
   else { show('setup'); }
