@@ -154,11 +154,11 @@
     const lastNames = lastCrewNames();
     rosterList.innerHTML = '';
     db.roster.forEach(f => {
-      const on = selected.has(f.id);
       const li = document.createElement('li');
-      li.className = 'roster-item' + (on ? ' on' : '');
+      li.className = 'roster-item';
+      li.dataset.id = f.id;
       li.innerHTML = `
-        <button class="check" type="button" aria-pressed="${on}" aria-label="Include in round">
+        <button class="check" type="button" aria-pressed="false" aria-label="Include in round">
           <svg viewBox="0 0 24 24"><use href="#i-check"></use></svg>
         </button>
         <span class="nm"></span>
@@ -169,12 +169,30 @@
         </button>`;
       li.querySelector('.nm').textContent = f.name;
       paintFella(li, f.name);
-      li.querySelector('.check').addEventListener('click', () => toggleSelected(f.id));
-      li.querySelector('.del').addEventListener('click', () => removeFromRoster(f.id, f.name));
+      // Tapping anywhere on the row toggles selection…
+      li.addEventListener('click', () => toggleSelected(f.id));
+      // …except the trash button, which deletes and must not toggle.
+      li.querySelector('.del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFromRoster(f.id, f.name);
+      });
+      applyItemState(li);
       rosterList.appendChild(li);
     });
 
-    // "bring back last round's crew" quick-pick
+    emptyHint.classList.toggle('hidden', db.roster.length > 0);
+    updateSelectionUI();
+  }
+
+  // Reflect a single row's selected state without rebuilding the list.
+  function applyItemState(li) {
+    const on = selected.has(li.dataset.id);
+    li.classList.toggle('on', on);
+    li.querySelector('.check').setAttribute('aria-pressed', on);
+  }
+
+  // Aggregate UI that depends on the whole selection (crew button, count, CTA).
+  function updateSelectionUI() {
     const crew = lastCrewIds();
     const allPicked = crew.length > 0 && crew.every(id => selected.has(id));
     lastCrewBtn.classList.toggle('hidden', crew.length === 0);
@@ -184,8 +202,6 @@
         ? `Last round's crew added · ${crew.length}`
         : `Bring back last round's crew · ${crew.length}`;
     }
-
-    emptyHint.classList.toggle('hidden', db.roster.length > 0);
     const n = selected.size;
     selCount.textContent = n ? `${n} in round` : '';
     startBtn.disabled = n === 0;
@@ -193,7 +209,9 @@
 
   function toggleSelected(id) {
     if (selected.has(id)) selected.delete(id); else selected.add(id);
-    renderSetup();
+    const li = rosterList.querySelector(`.roster-item[data-id="${id}"]`);
+    if (li) applyItemState(li);
+    updateSelectionUI();
   }
 
   function addToRoster(name) {
@@ -245,7 +263,8 @@
 
   lastCrewBtn.addEventListener('click', () => {
     lastCrewIds().forEach(id => selected.add(id));
-    renderSetup();
+    rosterList.querySelectorAll('.roster-item').forEach(applyItemState);
+    updateSelectionUI();
   });
 
   hofBtn.addEventListener('click', () => { renderHistory(); show('history'); });

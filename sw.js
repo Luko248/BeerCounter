@@ -1,11 +1,12 @@
 /* Beer Counter — offline service worker */
-const CACHE = 'beer-counter-v5';
+const CACHE = 'beer-counter-v6';
 
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './beer-bg.js',
   './manifest.webmanifest',
   './icon.svg',
   './icon-maskable.svg',
