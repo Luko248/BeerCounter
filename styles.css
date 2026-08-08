@@ -12,6 +12,7 @@
   --muted:     #b7935f;
   --danger:    #e0613b;
   --crown:     #ffce4a;
+  --shot:      #d7e2ec;   /* clear-spirit silver, sets shots apart from amber beer */
   --shadow:    0 10px 30px rgba(0,0,0,.45);
   --r:         18px;
 }
@@ -421,6 +422,35 @@ body {
 }
 .step-btn:active { transform: scale(.94); }
 
+/* shots row on a tile */
+.shot-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px dashed rgba(255,255,255,.14);
+  cursor: default;
+}
+.shot-ico { width: 16px; height: 16px; color: var(--shot); flex: 0 0 auto; }
+.shot-num {
+  font-family: 'Kanit', sans-serif;
+  font-weight: 800;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--foam);
+  margin-right: 3px;
+}
+.step-btn.sm { height: 32px; border-radius: 9px; }
+.step-btn.sm svg { width: 17px; height: 17px; }
+.step-btn.shot-minus { flex: 0 0 38px; }
+.step-btn.shot-plus {
+  flex: 1;
+  background: linear-gradient(180deg, #eef4f9, #c3cfda);
+  color: #26313b;
+  border-color: transparent;
+}
+
 /* floating +1 */
 .float {
   position: absolute;
@@ -546,6 +576,13 @@ body {
 .session-sub { color: var(--muted); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .session-total { display: inline-flex; align-items: center; gap: 5px; font-family: 'Kanit', sans-serif; font-weight: 800; color: var(--gold); }
 .session-total svg { width: 16px; height: 16px; color: var(--amber); }
+.shot-bit {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 8px;
+  font-style: normal;
+  color: #dfe8f2;
+}
+.session-total .shot-bit svg { width: 14px; height: 14px; color: var(--shot); }
 .del-session {
   border: none; background: transparent; color: #9a6a4e;
   width: 38px; height: 38px; border-radius: 10px;

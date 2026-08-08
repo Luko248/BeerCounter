@@ -6,9 +6,11 @@
   // ---------- data model ----------
   // db = {
   //   roster:  [{ id, name }]                              persistent fellas
-  //   session: { id, startedAt, members:[{id,name,count}] } | null   current round
-  //   history: [{ id, startedAt, endedAt, entries:[{name,count}] }]  archived rounds
+  //   session: { id, startedAt, members:[{id,name,count,shots}] } | null   current round
+  //   history: [{ id, startedAt, endedAt, entries:[{name,count,shots}] }]  archived rounds
   // }
+  // count = beers, shots = shots. Data saved before the shots feature has no
+  // `shots` field, so reads treat a missing value as 0.
   let db = { roster: [], session: null, history: [] };
 
   // fellas selected for the *next* round (ids). Ephemeral, defaults to "all".
@@ -75,6 +77,9 @@
         db.roster  = Array.isArray(data.roster)  ? data.roster  : [];
         db.session = data.session || null;
         db.history = Array.isArray(data.history) ? data.history : [];
+        if (db.session && Array.isArray(db.session.members)) {
+          db.session.members.forEach(m => { m.shots = m.shots || 0; });
+        }
         return;
       }
       migrateV1();
@@ -142,8 +147,10 @@
     // active session banner
     if (db.session) {
       resumeBanner.classList.remove('hidden');
-      const total = db.session.members.reduce((s, m) => s + m.count, 0);
-      resumeMeta.textContent = `${plural(db.session.members.length, 'fella')} · ${plural(total, 'beer')}`;
+      const beers = db.session.members.reduce((s, m) => s + m.count, 0);
+      const shots = db.session.members.reduce((s, m) => s + (m.shots || 0), 0);
+      resumeMeta.textContent = `${plural(db.session.members.length, 'fella')} · ${plural(beers, 'beer')}`
+        + (shots ? ` · ${plural(shots, 'shot')}` : '');
       startLabel.textContent = 'Start a new round';
     } else {
       resumeBanner.classList.add('hidden');
@@ -254,7 +261,7 @@
     }
     const members = db.roster
       .filter(f => selected.has(f.id))
-      .map(f => ({ id: f.id, name: f.name, count: 0 }));
+      .map(f => ({ id: f.id, name: f.name, count: 0, shots: 0 }));
     db.session = { id: uid(), startedAt: Date.now(), members };
     save();
     renderDashboard();
@@ -296,16 +303,25 @@
       <div class="tile-foot">
         <button class="step-btn minus" type="button" aria-label="Remove one beer"><svg viewBox="0 0 24 24"><use href="#i-minus"></use></svg></button>
         <button class="step-btn plus" type="button" aria-label="Add one beer"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
+      </div>
+      <div class="shot-row" title="Shots">
+        <svg class="shot-ico" viewBox="0 0 24 24"><use href="#i-shot"></use></svg>
+        <span class="shot-num">0</span>
+        <button class="step-btn sm shot-minus" type="button" aria-label="Remove one shot"><svg viewBox="0 0 24 24"><use href="#i-minus"></use></svg></button>
+        <button class="step-btn sm shot-plus" type="button" aria-label="Add one shot"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></button>
       </div>`;
     tile.querySelector('.tile-name').textContent = m.name;
     paintFella(tile, m.name);
 
+    // Tapping the tile itself adds a beer; the shot row has its own buttons.
     tile.addEventListener('click', (e) => {
-      if (e.target.closest('.step-btn')) return;
-      changeCount(m.id, +1, tile);
+      if (e.target.closest('.step-btn') || e.target.closest('.shot-row')) return;
+      changeCount(m.id, 'beer', +1, tile);
     });
-    tile.querySelector('.plus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, +1, tile); });
-    tile.querySelector('.minus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, -1, tile); });
+    tile.querySelector('.plus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, 'beer', +1, tile); });
+    tile.querySelector('.minus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, 'beer', -1, tile); });
+    tile.querySelector('.shot-plus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, 'shot', +1, tile); });
+    tile.querySelector('.shot-minus').addEventListener('click', (e) => { e.stopPropagation(); changeCount(m.id, 'shot', -1, tile); });
 
     syncTile(tile, m);
     return tile;
@@ -317,35 +333,38 @@
     const mugs = tile.querySelector('.count-mugs');
     const shown = Math.min(m.count, 6);
     mugs.innerHTML = MUG.repeat(shown) + (m.count > 6 ? `<span class="count-word">+${m.count - 6}</span>` : '');
+    tile.querySelector('.shot-num').textContent = m.shots || 0;
   }
 
-  function changeCount(id, delta, tile) {
+  function changeCount(id, kind, delta, tile) {
     const m = db.session.members.find(x => x.id === id);
     if (!m) return;
-    const next = m.count + delta;
+    const key = kind === 'shot' ? 'shots' : 'count';
+    const next = (m[key] || 0) + delta;
     if (next < 0) return;
-    m.count = next;
+    m[key] = next;
     save();
     syncTile(tile, m);
     if (delta > 0) {
       tile.classList.remove('bump'); void tile.offsetWidth; tile.classList.add('bump');
-      floatPlus(tile); buzz(12);
+      floatPlus(tile, kind); buzz(12);
     }
     updateTotals();
     refreshLeaders();
   }
 
-  function floatPlus(tile) {
+  function floatPlus(tile, kind) {
     const el = document.createElement('span');
     el.className = 'float';
-    el.textContent = '+1';
+    el.textContent = kind === 'shot' ? '+1 shot' : '+1';
     tile.appendChild(el);
     setTimeout(() => el.remove(), 700);
   }
 
   function updateTotals() {
-    const total = db.session.members.reduce((s, m) => s + m.count, 0);
-    totalLabel.textContent = plural(total, 'beer');
+    const beers = db.session.members.reduce((s, m) => s + m.count, 0);
+    const shots = db.session.members.reduce((s, m) => s + (m.shots || 0), 0);
+    totalLabel.textContent = plural(beers, 'beer') + (shots ? ` · ${plural(shots, 'shot')}` : '');
   }
 
   function refreshLeaders() {
@@ -362,9 +381,9 @@
   dashHofBtn.addEventListener('click', () => { renderHistory(); show('history'); });
 
   resetBtn.addEventListener('click', () => {
-    if (!db.session.members.some(m => m.count > 0)) return;
+    if (!db.session.members.some(m => m.count > 0 || m.shots > 0)) return;
     if (!confirm('Reset every count in this round back to zero?')) return;
-    db.session.members.forEach(m => { m.count = 0; });
+    db.session.members.forEach(m => { m.count = 0; m.shots = 0; });
     save();
     renderDashboard();
     buzz(20);
@@ -372,8 +391,8 @@
 
   function archiveSession() {
     if (!db.session) return;
-    const entries = db.session.members.map(m => ({ name: m.name, count: m.count }));
-    if (entries.some(e => e.count > 0)) {
+    const entries = db.session.members.map(m => ({ name: m.name, count: m.count, shots: m.shots || 0 }));
+    if (entries.some(e => e.count > 0 || e.shots > 0)) {
       db.history.push({ id: db.session.id, startedAt: db.session.startedAt, endedAt: Date.now(), entries });
     }
     db.session = null;
@@ -381,10 +400,10 @@
   }
 
   finishBtn.addEventListener('click', () => {
-    const any = db.session.members.some(m => m.count > 0);
+    const any = db.session.members.some(m => m.count > 0 || m.shots > 0);
     const msg = any
       ? 'Finish this round and save it to the Hall of Fame?'
-      : 'No beers counted yet — close this round without saving?';
+      : 'No drinks counted yet — close this round without saving?';
     if (!confirm(msg)) return;
     archiveSession();
     // start the next round from a clean slate — pick who's actually here
@@ -467,12 +486,13 @@
       id: db.session.id,
       startedAt: db.session.startedAt,
       endedAt: null,
-      entries: db.session.members.map(m => ({ name: m.name, count: m.count })),
+      entries: db.session.members.map(m => ({ name: m.name, count: m.count, shots: m.shots || 0 })),
     };
   }
 
   function sessionRow(s, live) {
     const total = s.entries.reduce((a, e) => a + e.count, 0);
+    const shotTotal = s.entries.reduce((a, e) => a + (e.shots || 0), 0);
     const winner = s.entries.reduce((w, e) => (!w || e.count > w.count ? e : w), null);
     const li = document.createElement('li');
     li.className = 'session-item' + (live ? ' live' : '');
@@ -481,11 +501,13 @@
         <span class="session-date">${live ? '● In progress' : fmtDate(s.endedAt || s.startedAt)}</span>
         <span class="session-sub"></span>
       </div>
-      <span class="session-total">${total}<svg viewBox="0 0 24 24"><use href="#i-mug"></use></svg></span>
+      <span class="session-total">${total}<svg viewBox="0 0 24 24"><use href="#i-mug"></use></svg>${shotTotal ? `<em class="shot-bit">${shotTotal}<svg viewBox="0 0 24 24"><use href="#i-shot"></use></svg></em>` : ''}</span>
       ${live ? '' : `<button class="del-session" type="button" aria-label="Delete session"><svg viewBox="0 0 24 24"><use href="#i-trash"></use></svg></button>`}`;
     const sub = winner && winner.count > 0
       ? `${winner.name} led with ${winner.count} · ${plural(s.entries.length, 'fella')}`
-      : `${plural(s.entries.length, 'fella')} · no beers`;
+      : shotTotal > 0
+        ? `${plural(s.entries.length, 'fella')} · shots only`
+        : `${plural(s.entries.length, 'fella')} · no beers`;
     li.querySelector('.session-sub').textContent = sub;
     if (!live) {
       li.querySelector('.del-session').addEventListener('click', () => {

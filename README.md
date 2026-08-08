@@ -5,7 +5,7 @@ A mobile-first, **installable PWA** for tallying beers during a session with the
 ## Features
 
 - **Persistent roster** — fella names are saved in `localStorage` and reused across sessions; tick who's in for each round.
-- **Live round dashboard** — two-column tiles, tap anywhere on a tile for **+1**, with `−`/`+` for corrections. The current leader gets a crown.
+- **Live round dashboard** — two-column tiles, tap anywhere on a tile for **+1 beer**, with `−`/`+` for corrections. Each fella also has a **shots** counter on the same tile, tallied separately from beers. The current beer leader gets a crown.
 - **Sessions** — one active round at a time; finish & save it to archive it. Resume an in-progress round any time.
 - **Hall of Fame** — all-time champion (best single round), a personal-best leaderboard with medals, and a browsable, deletable session history with dates.
 - **Offline / installable** — service worker caches the app shell; add to home screen for a standalone app.
@@ -26,9 +26,11 @@ Everything lives in the browser under the `beerCounter.v2` key in `localStorage`
 
 ```
 roster   – persistent fellas            [{ id, name }]
-session  – current round (or null)      { id, startedAt, members:[{id,name,count}] }
-history  – archived rounds              [{ id, startedAt, endedAt, entries:[{name,count}] }]
+session  – current round (or null)      { id, startedAt, members:[{id,name,count,shots}] }
+history  – archived rounds              [{ id, startedAt, endedAt, entries:[{name,count,shots}] }]
 ```
+
+`count` is beers, `shots` is shots. Rounds saved before the shots feature have no `shots` field — it's read as `0`.
 
 ## Files
 
