@@ -71,10 +71,15 @@
         <span id="startLabel">Start the round</span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"></use></svg>
       </button>
-      <button id="hofBtn" class="btn-ghost" type="button">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
-        <span>Hall of Fame</span>
-      </button>
+      <div class="foot-row">
+        <button id="hofBtn" class="btn-ghost" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
+          <span>Hall of Fame</span>
+        </button>
+        <button id="refreshBtn" class="icon-btn" type="button" aria-label="Refresh app and fetch the newest version">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-refresh"></use></svg>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -91,6 +96,9 @@
           <span id="totalLabel" class="total-label">0 beers</span>
         </div>
       </div>
+      <button id="dashRefreshBtn" class="icon-btn" type="button" aria-label="Refresh app and fetch the newest version">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-refresh"></use></svg>
+      </button>
       <button id="dashHofBtn" class="icon-btn" type="button" aria-label="Hall of Fame">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-trophy"></use></svg>
       </button>
@@ -197,6 +205,7 @@
       <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 5.2 19 11l-5.8 5.8-1.4-1.4 3.4-3.4H5v-2h10.2l-3.4-3.4 1.4-1.4Z"/></symbol>
       <symbol id="i-back" viewBox="0 0 24 24"><path fill="currentColor" d="M10.8 18.8 5 13l5.8-5.8 1.4 1.4L8.8 12H19v2H8.8l3.4 3.4-1.4 1.4Z"/></symbol>
       <symbol id="i-reset" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08a6 6 0 1 1-1.41-6.24L13.5 10.5H20V4l-2.35 2.35Z"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></symbol>
       <symbol id="i-crown" viewBox="0 0 24 24"><path fill="currentColor" d="M3 7l4 4 5-6 5 6 4-4-2 12H5L3 7Zm2 13h14v2H5z"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 7.4 18.7 6 9.5 16.2Z"/></symbol>

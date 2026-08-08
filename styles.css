@@ -261,6 +261,14 @@ body {
   gap: 10px;
 }
 
+.foot-row { display: flex; gap: 10px; }
+.foot-row .btn-ghost { flex: 1; }
+.foot-row .icon-btn { flex: 0 0 52px; height: auto; }
+
+/* spin the refresh icon while the new version is being fetched */
+.icon-btn.busy svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .btn-ghost {
   width: 100%;
   border: 1px solid var(--line);

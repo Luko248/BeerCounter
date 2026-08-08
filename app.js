@@ -283,6 +283,28 @@
 
   hofBtn.addEventListener('click', () => { renderHistory(); show('history'); });
 
+  // ---- refresh: fetch the newest version of the app ----
+  // Drops the service worker + cached shell so the reload hits the network.
+  // All data (roster, running session, history) lives in localStorage and is
+  // untouched, so a round in progress survives the refresh.
+  async function refreshApp(btn) {
+    if (btn.classList.contains('busy')) return;
+    btn.classList.add('busy');
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch { /* still reload — worst case the old cache serves once more */ }
+    location.reload();
+  }
+  $('refreshBtn').addEventListener('click', (e) => refreshApp(e.currentTarget));
+  $('dashRefreshBtn').addEventListener('click', (e) => refreshApp(e.currentTarget));
+
   // ================= DASHBOARD =================
   const MUG = '<svg viewBox="0 0 24 24"><use href="#i-mug"></use></svg>';
 
