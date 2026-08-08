@@ -1,5 +1,5 @@
 /* Beer Counter — offline service worker */
-const CACHE = 'beer-counter-v11';
+const CACHE = 'beer-counter-v12';
 
 const SHELL = [
   './',
@@ -28,11 +28,32 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Stale-while-revalidate: serve from cache instantly, refresh in the background.
-// Falls back to the cached app shell when offline (incl. fonts cached on first run).
+// App shell (page navigations, scripts, styles): network-first, so a normal
+// reload — including pull-to-refresh — always shows the newest deployed
+// version when online. The cache is only the offline fallback.
+// Everything else (fonts, icons): stale-while-revalidate as before.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  const isShell = req.mode === 'navigate' || req.destination === 'script' || req.destination === 'style';
+
+  if (isShell) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(req).then((cached) => cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined))
+        )
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(req).then((cached) => {
@@ -44,7 +65,7 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         })
-        .catch(() => cached || (req.mode === 'navigate' ? caches.match('./index.html') : undefined));
+        .catch(() => cached);
 
       return cached || network;
     })

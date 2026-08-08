@@ -627,6 +627,25 @@
 
   // ---------- service worker / PWA ----------
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('sw.js');
+        // Look for a newer version whenever the app comes back to the foreground.
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) reg.update().catch(() => {});
+        });
+        // When a new version takes control, reload once so it shows right away.
+        // The session lives in localStorage, so nothing is lost. First-ever
+        // install also fires controllerchange (clients.claim) — skip that one.
+        let hadController = !!navigator.serviceWorker.controller;
+        let reloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!hadController) { hadController = true; return; }
+          if (reloading) return;
+          reloading = true;
+          location.reload();
+        });
+      } catch { /* offline or unsupported — the app still works */ }
+    });
   }
 })();
