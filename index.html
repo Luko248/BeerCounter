@@ -134,6 +134,23 @@
     </div>
   </section>
 
+  <!-- ============ ADD-FELLA SHEET (mid-round) ============ -->
+  <div id="addModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <h3 id="addModalTitle" class="modal-title">Add a fella to the round</h3>
+      <form id="dashAddForm" class="add-row" autocomplete="off">
+        <input id="dashNameInput" class="text-input" type="text" placeholder="New name…" maxlength="20" />
+        <button class="btn-add" type="submit" aria-label="Add new fella to the round">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"></use></svg>
+        </button>
+      </form>
+      <ul id="benchList" class="roster-list bench-list"></ul>
+      <p id="benchEmpty" class="empty-hint hidden">Everyone from the roster is already in the round.</p>
+      <button id="addModalClose" class="btn-ghost" type="button">Done</button>
+    </div>
+  </div>
+
   <!-- ============ ICON SPRITE ============ -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>

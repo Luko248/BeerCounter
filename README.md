@@ -6,7 +6,7 @@ A mobile-first, **installable PWA** for tallying beers during a session with the
 
 - **Persistent roster** — fella names are saved in `localStorage` and reused across sessions; tick who's in for each round.
 - **Live round dashboard** — two-column tiles, tap anywhere on a tile for **+1 beer**, with `−`/`+` for corrections. Each fella also has a **shots** counter on the same tile, tallied separately from beers. The current beer leader gets a crown.
-- **Sessions** — one active round at a time; finish & save it to archive it. Resume an in-progress round any time.
+- **Sessions** — one active round at a time; finish & save it to archive it. Resume an in-progress round any time. Latecomers can join a running round via the **Add fella** tile — pick from the roster or type a new name.
 - **Hall of Fame** — all-time champion (best single round), a personal-best leaderboard with medals, and a browsable, deletable session history with dates.
 - **Offline / installable** — service worker caches the app shell; add to home screen for a standalone app.
 - **Beer-pub theme** — warm amber/gold on roasted-malt browns, real SVG icons (no emojis), haptics on supported devices.

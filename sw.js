@@ -1,5 +1,5 @@
 /* Beer Counter — offline service worker */
-const CACHE = 'beer-counter-v9';
+const CACHE = 'beer-counter-v10';
 
 const SHELL = [
   './',

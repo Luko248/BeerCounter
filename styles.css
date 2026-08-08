@@ -422,6 +422,67 @@ body {
 }
 .step-btn:active { transform: scale(.94); }
 
+/* dashed "add fella" tile at the end of the grid */
+.add-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  background: rgba(246,166,35,.05);
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r);
+  color: var(--gold);
+  font-family: 'Kanit', sans-serif;
+  font-weight: 600;
+  font-size: .95rem;
+  cursor: pointer;
+  transition: transform .1s, background .15s;
+}
+.add-tile svg { width: 26px; height: 26px; }
+.add-tile:active { transform: scale(.97); background: rgba(246,166,35,.1); }
+
+/* bottom sheet for adding a fella mid-round */
+.modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; }
+.modal.hidden { display: none; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  max-height: 80dvh;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 20px 18px max(18px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: sheetUp .22s ease;
+}
+.modal-title {
+  margin: 0;
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--foam);
+}
+.bench-list { margin: 0; overflow-y: auto; }
+.bench-list.hidden { display: none; }
+.bench-item .nm { padding: 4px 0; }
+.bench-add {
+  flex: 0 0 34px; height: 34px;
+  display: grid; place-items: center;
+  border: 1.5px dashed var(--fella-border, var(--line));
+  border-radius: 10px;
+  color: var(--fella-accent, var(--gold));
+}
+.bench-add svg { width: 20px; height: 20px; }
+.modal .empty-hint { margin: 4px 0; }
+@keyframes sheetUp { from { transform: translateY(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+
 /* shots row on a tile */
 .shot-row {
   display: flex;

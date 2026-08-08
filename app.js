@@ -61,6 +61,13 @@
   const resetBtn     = $('resetBtn');
   const finishBtn    = $('finishBtn');
 
+  const addModal      = $('addModal');
+  const dashAddForm   = $('dashAddForm');
+  const dashNameInput = $('dashNameInput');
+  const benchList     = $('benchList');
+  const benchEmpty    = $('benchEmpty');
+  const addModalClose = $('addModalClose');
+
   const histBackBtn  = $('histBackBtn');
   const champCard    = $('champCard');
   const leaderList   = $('leaderList');
@@ -285,6 +292,12 @@
     if (!db.session) { show('setup'); return; }
     tilesEl.innerHTML = '';
     db.session.members.forEach(m => tilesEl.appendChild(buildTile(m)));
+    const addTile = document.createElement('button');
+    addTile.type = 'button';
+    addTile.className = 'add-tile';
+    addTile.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"></use></svg><span>Add fella</span>`;
+    addTile.addEventListener('click', openAddModal);
+    tilesEl.appendChild(addTile);
     updateTotals();
     refreshLeaders();
   }
@@ -376,6 +389,62 @@
       tile.querySelector('.crown-badge').classList.toggle('hide', !isLeader);
     });
   }
+
+  // ---- add a fella while the round is running ----
+  function openAddModal() {
+    renderBench();
+    dashNameInput.value = '';
+    addModal.classList.remove('hidden');
+  }
+  function closeAddModal() { addModal.classList.add('hidden'); }
+
+  // Roster fellas who aren't in the current round.
+  function renderBench() {
+    const inRound = new Set(db.session.members.map(m => m.id));
+    const bench = db.roster.filter(f => !inRound.has(f.id));
+    benchList.innerHTML = '';
+    bench.forEach(f => {
+      const li = document.createElement('li');
+      li.className = 'roster-item bench-item';
+      li.innerHTML = `
+        <span class="nm"></span>
+        <span class="bench-add"><svg viewBox="0 0 24 24"><use href="#i-plus"></use></svg></span>`;
+      li.querySelector('.nm').textContent = f.name;
+      paintFella(li, f.name);
+      li.addEventListener('click', () => joinRound(f));
+      benchList.appendChild(li);
+    });
+    benchEmpty.classList.toggle('hidden', bench.length > 0);
+    benchList.classList.toggle('hidden', bench.length === 0);
+  }
+
+  function joinRound(f) {
+    if (!db.session || db.session.members.some(m => m.id === f.id)) return;
+    db.session.members.push({ id: f.id, name: f.name, count: 0, shots: 0 });
+    save();
+    buzz(12);
+    renderDashboard();   // tiles update live behind the sheet
+    renderBench();
+  }
+
+  dashAddForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = dashNameInput.value.trim();
+    if (!name) return;
+    const f = { id: uid(), name };
+    db.roster.push(f);   // joins the roster for future rounds too
+    joinRound(f);        // saves roster + session together
+    dashNameInput.value = '';
+    dashNameInput.focus();
+  });
+
+  addModalClose.addEventListener('click', closeAddModal);
+  addModal.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-backdrop')) closeAddModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !addModal.classList.contains('hidden')) closeAddModal();
+  });
 
   backBtn.addEventListener('click', () => { renderSetup(); show('setup'); });
   dashHofBtn.addEventListener('click', () => { renderHistory(); show('history'); });
