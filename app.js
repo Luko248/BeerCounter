@@ -308,7 +308,9 @@
   // ================= DASHBOARD =================
   const MUG = '<svg viewBox="0 0 24 24"><use href="#i-mug"></use></svg>';
 
-  const sessionMax = () => db.session.members.reduce((m, x) => Math.max(m, x.count), 0);
+  // The crown goes to whoever downed the most drinks — beers and shots together.
+  const drinks = (m) => m.count + (m.shots || 0);
+  const sessionMax = () => db.session.members.reduce((m, x) => Math.max(m, drinks(x)), 0);
 
   function renderDashboard() {
     if (!db.session) { show('setup'); return; }
@@ -406,7 +408,7 @@
     const top = sessionMax();
     tilesEl.querySelectorAll('.tile').forEach(tile => {
       const m = db.session.members.find(x => x.id === tile.dataset.id);
-      const isLeader = top > 0 && m.count === top;
+      const isLeader = top > 0 && drinks(m) === top;
       tile.classList.toggle('leader', isLeader);
       tile.querySelector('.crown-badge').classList.toggle('hide', !isLeader);
     });
