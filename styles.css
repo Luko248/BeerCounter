@@ -336,6 +336,19 @@ body {
   line-height: 1.1;
 }
 .total-label { font-size: .82rem; color: var(--muted); font-weight: 500; }
+.total-line { display: inline-flex; align-items: center; gap: 7px; }
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #7ee787;
+  box-shadow: 0 0 0 0 rgba(126,231,135,.5);
+  animation: pulseGreen 1.6s infinite;
+}
+.live-dot.hidden { display: none; }
+@keyframes pulseGreen {
+  0%   { box-shadow: 0 0 0 0 rgba(126,231,135,.5); }
+  70%  { box-shadow: 0 0 0 7px rgba(126,231,135,0); }
+  100% { box-shadow: 0 0 0 0 rgba(126,231,135,0); }
+}
 
 .icon-btn {
   flex: 0 0 44px; height: 44px;
@@ -554,6 +567,7 @@ body {
   background: linear-gradient(180deg, transparent, var(--bg) 38%);
 }
 .dash-foot .btn-ghost { width: auto; flex: 0 0 auto; padding: 13px 18px; }
+.dash-foot #shareBtn { padding: 13px 15px; }
 .dash-foot .btn-primary { flex: 1; }
 
 /* ============ HALL OF FAME ============ */

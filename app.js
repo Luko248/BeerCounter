@@ -11,6 +11,10 @@
   // }
   // count = beers, shots = shots. Data saved before the shots feature has no
   // `shots` field, so reads treat a missing value as 0.
+  //
+  // Shared rounds: session.share holds a random room id. Members then also
+  // carry { rev, at } — a per-member change counter + timestamp used to merge
+  // concurrent edits from other devices (higher rev wins, timestamp breaks ties).
   let db = { roster: [], session: null, history: [] };
 
   // fellas selected for the *next* round (ids). Ephemeral, defaults to "all".
@@ -74,7 +78,10 @@
   const sessionList  = $('sessionList');
 
   // ---------- persistence ----------
-  function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(db));
+    queuePublish();   // no-op unless the session is shared
+  }
 
   function load() {
     try {
@@ -380,6 +387,7 @@
     const next = (m[key] || 0) + delta;
     if (next < 0) return;
     m[key] = next;
+    touch(m);
     save();
     syncTile(tile, m);
     if (delta > 0) {
@@ -444,7 +452,9 @@
 
   function joinRound(f) {
     if (!db.session || db.session.members.some(m => m.id === f.id)) return;
-    db.session.members.push({ id: f.id, name: f.name, count: 0, shots: 0 });
+    const m = { id: f.id, name: f.name, count: 0, shots: 0 };
+    touch(m);
+    db.session.members.push(m);
     save();
     buzz(12);
     renderDashboard();   // tiles update live behind the sheet
@@ -476,7 +486,7 @@
   resetBtn.addEventListener('click', () => {
     if (!db.session.members.some(m => m.count > 0 || m.shots > 0)) return;
     if (!confirm('Reset every count in this round back to zero?')) return;
-    db.session.members.forEach(m => { m.count = 0; m.shots = 0; });
+    db.session.members.forEach(m => { m.count = 0; m.shots = 0; touch(m); });
     save();
     renderDashboard();
     buzz(20);
@@ -484,6 +494,13 @@
 
   function archiveSession() {
     if (!db.session) return;
+    if (db.session.share) {
+      // Tell the crew the round is over, then leave the room (flushing the
+      // farewell message before the socket closes).
+      publishEnded();
+      db.session.share = null;
+      disconnectSync(true);
+    }
     const entries = db.session.members.map(m => ({ name: m.name, count: m.count, shots: m.shots || 0 }));
     if (entries.some(e => e.count > 0 || e.shots > 0)) {
       db.history.push({ id: db.session.id, startedAt: db.session.startedAt, endedAt: Date.now(), entries });
@@ -504,6 +521,227 @@
     buzz(20);
     renderSetup();
     show('setup');
+  });
+
+  // ================= LIVE SHARING =================
+  // A shared round lives in a "room" on a public MQTT relay (no account, no
+  // backend of ours). The link carries a random room id; everyone in the room
+  // exchanges the full session state as a retained message, merged per member
+  // via { rev, at } so concurrent taps on different fellas never clash.
+  const TOPIC_PREFIX = 'beercounter/v1/';
+  const BROKERS = (() => {
+    try {
+      const o = JSON.parse(localStorage.getItem('bc.brokers') || 'null');
+      if (Array.isArray(o) && o.length) return o;   // override for testing
+    } catch { /* fall through */ }
+    return ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+  })();
+  const clientId = 'bc_' + uid();
+
+  const liveDot = $('liveDot');
+  const shareBtn = $('shareBtn');
+
+  let mq = null;            // mqtt client
+  let shareId = null;       // room id of the round we're syncing
+  let pendingJoin = null;   // room id we're joining, waiting for first state
+  let joinDeadline = null;
+  let publishTimer = null;
+
+  function setLive(on) { liveDot.classList.toggle('hidden', !on); }
+
+  // Bump a member's merge clock (no-op for solo rounds).
+  function touch(m) {
+    if (!db.session || !db.session.share) return;
+    m.rev = (m.rev || 0) + 1;
+    m.at = Date.now();
+  }
+
+  function queuePublish() {
+    if (!db.session || !db.session.share) return;
+    clearTimeout(publishTimer);
+    publishTimer = setTimeout(publishState, 200);
+  }
+
+  function publishState() {
+    if (!mq || !mq.connected || !shareId || !db.session || db.session.share !== shareId) return;
+    const s = db.session;
+    const payload = JSON.stringify({ v: 1, from: clientId, session: { id: s.id, startedAt: s.startedAt, members: s.members } });
+    mq.publish(TOPIC_PREFIX + shareId, payload, { retain: true, qos: 0 });
+  }
+
+  function publishEnded() {
+    if (!mq || !mq.connected || !shareId || !db.session) return;
+    const s = db.session;
+    const payload = JSON.stringify({ v: 1, from: clientId, session: { id: s.id, startedAt: s.startedAt, ended: true, members: s.members } });
+    mq.publish(TOPIC_PREFIX + shareId, payload, { retain: true, qos: 0 });
+  }
+
+  // graceful=true flushes queued messages (needed right after publishEnded).
+  function disconnectSync(graceful) {
+    clearTimeout(publishTimer);
+    clearTimeout(joinDeadline);
+    shareId = null;
+    pendingJoin = null;
+    setLive(false);
+    if (mq) { const dead = mq; mq = null; dead.end(!graceful); }
+  }
+
+  function connectSync() {
+    if (!window.mqtt || !shareId || mq) return;
+    const tryBroker = (i) => {
+      if (!shareId || mq) return;
+      let connectedOnce = false;
+      const client = mqtt.connect(BROKERS[i % BROKERS.length], {
+        connectTimeout: 6000,
+        reconnectPeriod: 0,     // we handle retries so we can rotate brokers
+        keepalive: 30,
+        clean: true,
+      });
+      mq = client;
+      client.on('connect', () => {
+        connectedOnce = true;
+        setLive(true);
+        client.subscribe(TOPIC_PREFIX + shareId);
+        // Give the room's retained state a moment to arrive and merge before
+        // announcing ours, so a stale copy never overwrites fresher state.
+        if (!pendingJoin) setTimeout(publishState, 1200);
+      });
+      client.on('message', (t, buf) => {
+        let msg = null;
+        try { msg = JSON.parse(buf.toString()); } catch { return; }
+        applyRemote(msg);
+      });
+      client.on('error', () => {});
+      client.on('close', () => {
+        setLive(false);
+        if (mq !== client) return;   // superseded or deliberately closed
+        mq = null;
+        setTimeout(() => {
+          if (shareId && !mq) tryBroker(connectedOnce ? i : i + 1);
+        }, 2500);
+      });
+    };
+    tryBroker(0);
+  }
+
+  // Make sure every fella in the session is also on the local roster.
+  function adoptRosterFromSession() {
+    const names = new Set(db.roster.map(f => f.name));
+    db.session.members.forEach(m => {
+      if (!names.has(m.name)) { db.roster.push({ id: m.id, name: m.name }); names.add(m.name); }
+    });
+  }
+
+  // Merge remote members into ours. Higher rev wins; timestamp breaks ties.
+  function mergeMembers(remoteMembers) {
+    let changed = false;
+    const local = new Map(db.session.members.map(m => [m.id, m]));
+    (remoteMembers || []).forEach(raw => {
+      if (!raw || !raw.id) return;
+      const rm = {
+        id: String(raw.id),
+        name: String(raw.name || '?').slice(0, 20),
+        count: Math.max(0, raw.count | 0),
+        shots: Math.max(0, raw.shots | 0),
+        rev: raw.rev | 0,
+        at: +raw.at || 0,
+      };
+      const lm = local.get(rm.id);
+      if (!lm) { local.set(rm.id, rm); changed = true; return; }
+      if (rm.rev > (lm.rev | 0) || (rm.rev === (lm.rev | 0) && rm.at > (+lm.at || 0))) {
+        if (rm.count !== lm.count || rm.shots !== lm.shots || rm.name !== lm.name) changed = true;
+        local.set(rm.id, rm);
+      }
+    });
+    db.session.members = [...local.values()];
+    return changed;
+  }
+
+  function applyRemote(msg) {
+    if (!msg || msg.v !== 1 || !msg.session || msg.from === clientId) return;
+    const rs = msg.session;
+
+    // First state after opening a shared link: adopt the whole round.
+    if (pendingJoin) {
+      clearTimeout(joinDeadline);
+      if (rs.ended) {
+        pendingJoin = null;
+        disconnectSync();
+        alert('That round has already been finished.');
+        renderSetup();
+        return;
+      }
+      db.session = { id: rs.id, startedAt: +rs.startedAt || Date.now(), share: shareId, members: [] };
+      mergeMembers(rs.members);
+      adoptRosterFromSession();
+      pendingJoin = null;
+      save();
+      renderDashboard();
+      show('dashboard');
+      buzz(15);
+      return;
+    }
+
+    if (!db.session || db.session.share !== shareId) return;
+
+    // Someone finished the round — archive it here too.
+    if (rs.ended) {
+      mergeMembers(rs.members);
+      db.session.share = null;   // don't re-broadcast the end
+      disconnectSync();
+      archiveSession();
+      selected = new Set();
+      renderSetup();
+      show('setup');
+      buzz(25);
+      return;
+    }
+
+    if (mergeMembers(rs.members)) {
+      adoptRosterFromSession();
+      save();
+      if (screens.dashboard.classList.contains('is-active')) renderDashboard();
+    }
+  }
+
+  function startJoin(id) {
+    if (!window.mqtt) {
+      alert('Joining a shared round needs an internet connection — try again online.');
+      return;
+    }
+    shareId = id;
+    pendingJoin = id;
+    joinDeadline = setTimeout(() => {
+      if (pendingJoin) {
+        disconnectSync();
+        alert("Couldn't reach the shared round — check the link or ask for a fresh one.");
+        renderSetup();
+      }
+    }, 12000);
+    connectSync();
+  }
+
+  shareBtn.addEventListener('click', async () => {
+    if (!db.session) return;
+    if (!window.mqtt) { alert('Sharing needs an internet connection — try again online.'); return; }
+    if (!db.session.share) {
+      db.session.share = uid() + uid();
+      db.session.members.forEach(m => { m.rev = m.rev || 1; m.at = m.at || Date.now(); });
+      save();
+      shareId = db.session.share;
+      connectSync();
+    }
+    const link = location.origin + location.pathname + '#join=' + db.session.share;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Beer Counter — join the round', url: link }); } catch { /* user cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(link);
+        alert('Link copied — send it to the fellas! Anyone who opens it joins this round.');
+      } catch {
+        prompt('Copy the link and send it to the fellas:', link);
+      }
+    }
   });
 
   // ================= HALL OF FAME =================
@@ -623,9 +861,34 @@
   // Nobody is preselected by default: freshly added names auto-tick, and
   // returning fellas are chosen deliberately (or via "last round's crew").
   selected = new Set();
+
+  // Opened via a shared link?
+  const joinId = (location.hash.match(/[#&]join=([a-z0-9]+)/i) || [])[1] || null;
+  if (joinId) history.replaceState(null, '', location.pathname + location.search);
+
+  let joining = false;
+  if (joinId && db.session && db.session.share === joinId) {
+    joining = false;   // already in this shared round — just reconnect below
+  } else if (joinId) {
+    const ok = !db.session
+      || confirm('Join the shared round from the link? Your current round will be finished and saved first.');
+    if (ok) {
+      if (db.session) archiveSession();
+      joining = true;
+    }
+  }
+
   renderSetup();
-  if (db.session) { renderDashboard(); show('dashboard'); }
-  else { show('setup'); }
+  if (joining) {
+    show('setup');
+    startJoin(joinId);
+  } else if (db.session) {
+    renderDashboard();
+    show('dashboard');
+    if (db.session.share) { shareId = db.session.share; connectSync(); }
+  } else {
+    show('setup');
+  }
 
   // ---------- service worker / PWA ----------
   if ('serviceWorker' in navigator) {

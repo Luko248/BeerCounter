@@ -9,6 +9,7 @@ A mobile-first, **installable PWA** for tallying beers during a session with the
 - **Sessions** — one active round at a time; finish & save it to archive it. Resume an in-progress round any time. Latecomers can join a running round via the **Add fella** tile — pick from the roster or type a new name.
 - **Hall of Fame** — all-time champion (best single round), a personal-best leaderboard with medals, and a browsable, deletable session history with dates.
 - **Offline / installable** — service worker caches the app shell; add to home screen for a standalone app. A **refresh button** (setup footer + dashboard header) drops the cache and fetches the newest version — data lives in `localStorage`, so a running round survives.
+- **Shared rounds** — tap the share button on the dashboard to get a link; anyone who opens it joins the live round: sees everyone, adds beers/shots, adds fellas. No login and no backend of ours — sync goes through a free public MQTT relay (random room ids, retained state, per-member merge so simultaneous taps on different fellas never clash). Anyone in the round can finish it, archiving it for the whole crew. Solo rounds never touch the network.
 - **Beer-pub theme** — warm amber/gold on roasted-malt browns, real SVG icons (no emojis), haptics on supported devices.
 
 ## Run it

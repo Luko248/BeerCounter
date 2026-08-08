@@ -93,7 +93,7 @@
         <svg class="dash-title-icon" viewBox="0 0 64 64" aria-hidden="true"><use href="#i-beer"></use></svg>
         <div>
           <h2>The Round</h2>
-          <span id="totalLabel" class="total-label">0 beers</span>
+          <span class="total-line"><span id="totalLabel" class="total-label">0 beers</span><span id="liveDot" class="live-dot hidden" title="Shared round — live"></span></span>
         </div>
       </div>
       <button id="dashRefreshBtn" class="icon-btn" type="button" aria-label="Refresh app and fetch the newest version">
@@ -110,6 +110,9 @@
       <button id="resetBtn" class="btn-ghost danger" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-reset"></use></svg>
         <span>Reset</span>
+      </button>
+      <button id="shareBtn" class="btn-ghost" type="button" aria-label="Share this round with a link">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-share"></use></svg>
       </button>
       <button id="finishBtn" class="btn-primary" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-flag"></use></svg>
@@ -206,6 +209,7 @@
       <symbol id="i-back" viewBox="0 0 24 24"><path fill="currentColor" d="M10.8 18.8 5 13l5.8-5.8 1.4 1.4L8.8 12H19v2H8.8l3.4 3.4-1.4 1.4Z"/></symbol>
       <symbol id="i-reset" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></symbol>
       <symbol id="i-refresh" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08a6 6 0 1 1-1.41-6.24L13.5 10.5H20V4l-2.35 2.35Z"/></symbol>
+      <symbol id="i-share" viewBox="0 0 24 24"><path fill="currentColor" d="M18 8a3 3 0 1 0-2.83-4H15a3 3 0 0 0 .04.49L8.9 7.56a3 3 0 1 0 0 4.88l6.15 3.07A3 3 0 1 0 18 14c-.8 0-1.52.31-2.06.82l-6-3.01a3 3 0 0 0 0-1.62l6-3.01c.54.5 1.26.82 2.06.82Z"/></symbol>
       <symbol id="i-trash" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 9Z"/></symbol>
       <symbol id="i-crown" viewBox="0 0 24 24"><path fill="currentColor" d="M3 7l4 4 5-6 5 6 4-4-2 12H5L3 7Zm2 13h14v2H5z"/></symbol>
       <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 7.4 18.7 6 9.5 16.2Z"/></symbol>
@@ -215,6 +219,7 @@
     </defs>
   </svg>
 
+  <script src="vendor/mqtt.min.js"></script>
   <script src="beer-bg.js"></script>
   <script src="app.js"></script>
 </body>

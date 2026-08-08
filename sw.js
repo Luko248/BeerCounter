@@ -1,5 +1,5 @@
 /* Beer Counter — offline service worker */
-const CACHE = 'beer-counter-v12';
+const CACHE = 'beer-counter-v13';
 
 const SHELL = [
   './',
@@ -7,6 +7,7 @@ const SHELL = [
   './styles.css',
   './app.js',
   './beer-bg.js',
+  './vendor/mqtt.min.js',
   './manifest.webmanifest',
   './icon.svg',
   './icon-maskable.svg',
